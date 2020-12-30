@@ -16,8 +16,18 @@ from sklearn import preprocessing
 import keras
 import collections
 from sklearn.model_selection import KFold
+from inputParser import readFromPath
 
 
+#parms
+img_size = 32
+DATA_STR = 'data'
+FONTS = ['Skylark', 'Sweet Puppy', 'Ubuntu Mono']
+fileName = 'font_recognition_train_set/SynthText.h5'
+subSet = False
+
+data = list(tuple())
+(db, im_names) = readFromPath(fileName, subSet)
 def get_points(pts, index):
     rect = np.zeros((4, 2), dtype="float32")
     rect[0] = pts[:, :, index].T[0]
@@ -32,8 +42,8 @@ def split(word):
 
 
 def data_generator(data, img, times):
-    arr = img_to_array(img[1])  # shape (28, 28, 1)
-    arr = arr.reshape((1,) + arr.shape)  # shape (1, 28, 28, 1)
+    arr = img_to_array(img[1])  # shape (32, 32, 1)
+    arr = arr.reshape((1,) + arr.shape)  # shape (1, 32, 32, 1)
     # the .flow() command below generates batches of randomly transformed images
     # and saves the results to the `preview/` directory
     i = 0
@@ -67,14 +77,6 @@ def count_for_data_generator(data):
 
     return list_per_font, list_of_duplication_per_font
 
-
-SIZE, ZERO, DATA_STR = 28, 0, 'data'
-FONTS = ['Skylark', 'Sweet Puppy', 'Ubuntu Mono']
-file_name = 'font_recognition_train_set/SynthText.h5'
-db = h5py.File(file_name, 'r')
-im_names = list(db[DATA_STR].keys())
-data = list(tuple())
-
 datagen = ImageDataGenerator(
     rotation_range=10,
     width_shift_range=0.1,
@@ -84,6 +86,7 @@ datagen = ImageDataGenerator(
     horizontal_flip=True,
     fill_mode='nearest')
 
+index = 0
 for im in im_names:
     img = db[DATA_STR][im][:]
     font = db[DATA_STR][im].attrs['font']
@@ -96,14 +99,17 @@ for im in im_names:
         txt_split.append(split(word.decode('UTF-8')))
     txt_split = [val for sublist in txt_split for val in sublist]
 
-    for i in range(ZERO, charBB.shape[2]):
+    for i in range(0, charBB.shape[2]):
         rect = get_points(charBB, i)
-        dst = np.array([[ZERO, ZERO], [SIZE, ZERO], [ZERO, SIZE], [SIZE, SIZE]],
+        dst = np.array([[0, 0], [img_size, 0], [0, img_size], [img_size, img_size]],
                        dtype="float32")
         M = cv2.getPerspectiveTransform(rect, dst)
-        warped = cv2.warpPerspective(img, M, (SIZE, SIZE))
+        warped = cv2.warpPerspective(img, M, (img_size, img_size))
 
         data.append((font[i], warped, txt_split[i]))  # sharpened
+
+    print("index is " + str(index) +" from " + str(len(im_names)))
+    index = index + 1
 
 list_per_font, list_of_duplication_per_font = count_for_data_generator(data)
 
@@ -115,6 +121,7 @@ for line, font in zip(list_of_duplication_per_font, FONTS):
             data_generator(data, img, max_value - pair[1])  # max_value - pair[1]
             line[pair[0]] += (max_value - pair[1])  # max_value - pair[1]
 
+index = 0
 gray_data = list(tuple())
 for tuple_info in data:
     img_gray = cv2.cvtColor(tuple_info[1], cv2.COLOR_BGR2GRAY)
@@ -126,12 +133,14 @@ for tuple_info in data:
     # applying the sharpening kernel to the input image & displaying it.
     sharpened = cv2.filter2D(erosion, -1, kernel)
     gray_data.append((tuple_info[0], sharpened, tuple_info[2]))
+    print("index is " + str(index) + " from " + str(len(im_names)))
+    index = index + 1
 
 X, y = np.asarray(list(chain.from_iterable(islice(item, 1, 2) for item in
                                            gray_data))), \
        np.asarray(list(chain.from_iterable(islice(item, 0, 1) for item in
                                            gray_data)))
-a = np.array(X).reshape(len(X), 28, 28, 1)
+a = np.array(X).reshape(len(X), img_size, img_size, 1)
 X_train, X_test, y_train, y_test = train_test_split(a, y,
                                                     test_size=0.2,
                                                     random_state=42)
@@ -141,18 +150,13 @@ y_train, y_test = lb.fit_transform(y_train), lb.fit_transform(y_test)
 #########################################################################
 from model import createModel,createModel2
 
-img_size = 28
 model = createModel(img_size, 0)
 
 model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
-# split data
-train_files, test_files, train_cat, test_cat = train_test_split(X_train, y_train,
-                                                                test_size=(0.8),
-                                                                random_state=42)
 # train data
-history = model.fit(train_files,
-                    train_cat,
+history = model.fit(X_train,
+                    y_train,
                     verbose=1,
                     epochs=50,
                     batch_size=32,

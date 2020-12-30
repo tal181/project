@@ -1,7 +1,7 @@
 import h5py
 import numpy as np
 import cv2
-from sklearn.preprocessing import label_binarize
+from sklearn.preprocessing import label_binarize,binarize
 import matplotlib.pyplot as plt
 
 
@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 def readFromPath(fileName, subSet=False):
     db = h5py.File(fileName, 'r')
     if subSet:
-        im_names = list(db['data'].keys())[:20]
+        im_names = list(db['data'].keys())[:200]
     else:
         im_names = list(db['data'].keys())
 
@@ -79,7 +79,7 @@ def createWordChars(image_path, org_img, wordTxt, leftIndex, rightIndex, charBB,
 
         charTxt = wordTxt.decode('UTF-8')[index]
         print("img is " + str(image_path) + ", word is " + str(wordTxt.decode("utf-8")), "char is " + charTxt)
-        char = (image_path, wordTxt.decode("utf-8"), grayImgChar, y_bin, charTxt)
+        char = (image_path, wordTxt.decode("utf-8"), grayImgChar, y_bin, charTxt, labelTxt)
         chars.append(char)
         index = index +1
     return chars
