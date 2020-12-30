@@ -4,7 +4,7 @@ import numpy as np
 from keras.layers.normalization import BatchNormalization
 from keras.layers import Conv2D, MaxPooling2D , UpSampling2D ,Conv2DTranspose
 
-def createModel(img_size, filter_size):
+def createModel(img_size):
     input_shape = (img_size, img_size, 1)
 
     model = Sequential()

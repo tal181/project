@@ -26,21 +26,45 @@ def readFromPath(fileName, subSet=False):
 
     return (db, im_names)
 
-import itertools
-def readData(db, im_names, labelsMap, imgSize):
-    chars = []
-    for i in range(len(im_names)):
-        # images
-        image_path = im_names[i]
+DATA_STR = 'data'
 
+def get_points(pts, index):
+    rect = np.zeros((4, 2), dtype="float32")
+    rect[0] = pts[:, :, index].T[0]
+    rect[1] = pts[:, :, index].T[1]
+    rect[3] = pts[:, :, index].T[2]
+    rect[2] = pts[:, :, index].T[3]
+    return rect
+
+def split(word):
+    return [char for char in word]
+
+def readData(db, im_names, labelsMap, imgSize):
+    data = []
+    index = 0
+    for i in range(len(im_names)):
+        image_path = im_names[i]
         img = db['data'][image_path]
+
         imgFont = img.attrs['font']
         imgTxt = img.attrs['txt']
-
         charBB = img.attrs['charBB']
         wordBB = img.attrs['wordBB']
 
         org_img = np.array(db['data'][image_path])
+        # txt_split = []
+        # for word in txt:
+        #     txt_split.append(split(word.decode('UTF-8')))
+        # txt_split = [val for sublist in txt_split for val in sublist]
+        #
+        # for i in range(0, charBB.shape[2]):
+        #     rect = get_points(charBB, i)
+        #     dst = np.array([[0, 0], [imgSize, 0], [0, imgSize], [imgSize, imgSize]],
+        #                    dtype="float32")
+        #     M = cv2.getPerspectiveTransform(rect, dst)
+        #     warped = cv2.warpPerspective(img, M, (imgSize, imgSize))
+        #
+        #     data.append((font[i], warped, txt_split[i]))  # sharpened
 
         offset = 0
         iterIndex = 0
@@ -51,13 +75,14 @@ def readData(db, im_names, labelsMap, imgSize):
             print("IMG index is " + str(i) + " from " + str(len(im_names)))
             wordTxt = imgTxt[iterIndex]
             wordChars = createWordChars(image_path, org_img, wordTxt, leftIndex, rightIndex, charBB, imgFont, imgSize,
-                              labelsMap)
-            chars = chars + wordChars
+                                        labelsMap)
+            data = data + wordChars
             iterIndex = iterIndex + 1
             offset = offset + len(imgTxt[img_txt_ind])
 
-    return chars
-
+        print("index is " + str(index) + " from " + str(len(im_names)))
+        index = index + 1
+    return data
 
 def createWordChars(image_path, org_img, wordTxt, leftIndex, rightIndex, charBB, imgFont, imgSize, labelsMap):
 
@@ -71,15 +96,14 @@ def createWordChars(image_path, org_img, wordTxt, leftIndex, rightIndex, charBB,
         M = cv2.getPerspectiveTransform(sec, target)
         dst = cv2.warpPerspective(org_img, M, (imgSize, imgSize))
 
-        grayImgChar = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
-
         labelTxt = imgFont[b_inx].decode('UTF-8')
         labels.append(labelsMap[labelTxt])
         y_bin = label_binarize(labels, classes=[i for i in range(0, 3)])
 
         charTxt = wordTxt.decode('UTF-8')[index]
         print("img is " + str(image_path) + ", word is " + str(wordTxt.decode("utf-8")), "char is " + charTxt)
-        char = (image_path, wordTxt.decode("utf-8"), grayImgChar, y_bin, charTxt, labelTxt)
+        # char = (image_path, wordTxt.decode("utf-8"), dst, y_bin, charTxt, labelTxt)
+        char = (image_path, labelTxt, dst, charTxt)
         chars.append(char)
         index = index +1
     return chars
