@@ -32,7 +32,7 @@ def createModel(img_size):
 
     # Cu Layers
 
-def createModel2(img_size, filter_size):
+def createModel2(img_size):
     input_shape = (img_size, img_size, 1)
 
     model = Sequential()
