@@ -16,7 +16,8 @@ img_size = 32
 epochs = 50
 batch_size = 32
 filter_size = 64
-subSet = True
+subSet = False
+
 labelsMap = {"Skylark": 0, "Sweet Puppy": 1, "Ubuntu Mono": 2}
 output_location = "validation.csv"
 # ############# read data
@@ -48,7 +49,7 @@ y_train, y_test = lb.fit_transform(y_train), lb.fit_transform(y_test)
 
 #create model an train
 #########################################################################
-model = createModel2(img_size)
+model = createModel(img_size)
 
 model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 

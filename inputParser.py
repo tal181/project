@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 def readFromPath(fileName, subSet=False):
     db = h5py.File(fileName, 'r')
     if subSet:
-        im_names = list(db['data'].keys())[:200]
+        im_names = list(db['data'].keys())[:2]
     else:
         im_names = list(db['data'].keys())
 
@@ -52,19 +52,6 @@ def readData(db, im_names, labelsMap, imgSize):
         wordBB = img.attrs['wordBB']
 
         org_img = np.array(db['data'][image_path])
-        # txt_split = []
-        # for word in txt:
-        #     txt_split.append(split(word.decode('UTF-8')))
-        # txt_split = [val for sublist in txt_split for val in sublist]
-        #
-        # for i in range(0, charBB.shape[2]):
-        #     rect = get_points(charBB, i)
-        #     dst = np.array([[0, 0], [imgSize, 0], [0, imgSize], [imgSize, imgSize]],
-        #                    dtype="float32")
-        #     M = cv2.getPerspectiveTransform(rect, dst)
-        #     warped = cv2.warpPerspective(img, M, (imgSize, imgSize))
-        #
-        #     data.append((font[i], warped, txt_split[i]))  # sharpened
 
         offset = 0
         iterIndex = 0
@@ -89,7 +76,6 @@ def createWordChars(image_path, org_img, wordTxt, leftIndex, rightIndex, charBB,
     index = 0
     chars = []
     for b_inx in range(leftIndex, rightIndex + 1):
-        labels = []
         bb = charBB[:, :, b_inx]
         sec = np.float32([bb.T[0], bb.T[1], bb.T[3], bb.T[2]])
         target = np.float32([[0, 0], [imgSize, 0], [0, imgSize], [imgSize, imgSize]])
@@ -97,8 +83,6 @@ def createWordChars(image_path, org_img, wordTxt, leftIndex, rightIndex, charBB,
         dst = cv2.warpPerspective(org_img, M, (imgSize, imgSize))
 
         labelTxt = imgFont[b_inx].decode('UTF-8')
-        labels.append(labelsMap[labelTxt])
-        y_bin = label_binarize(labels, classes=[i for i in range(0, 3)])
 
         charTxt = wordTxt.decode('UTF-8')[index]
         print("img is " + str(image_path) + ", word is " + str(wordTxt.decode("utf-8")), "char is " + charTxt)
